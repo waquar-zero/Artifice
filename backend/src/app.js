@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import progressRoutes from "./routes/progressRoutes.js";
 import hintRoutes from "./routes/hintRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
+import runnerRoutes from "./routes/runnerRoutes.js";
 
 const app = express();
 
@@ -26,5 +27,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/sprints", hintRoutes);
 app.use("/api/submissions", submissionRoutes);
+app.use("/api/runner", runnerRoutes);
 
 export default app;
