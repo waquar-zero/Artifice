@@ -119,3 +119,29 @@ export const createSubmission = async (req, res) => {
         });
     }
 };
+
+export const getSubmissions = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+
+        const submissions = await Submission.find({
+            userId: req.userId,
+            projectId
+        })
+            .select("-code")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: submissions
+        });
+
+    } catch (error) {
+        console.error("Get submissions error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch submissions"
+        });
+    }
+};
