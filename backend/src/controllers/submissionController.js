@@ -2,18 +2,22 @@ import Submission from "../models/Submission.js";
 import Sprint from "../models/Sprint.js";
 import Progress from "../models/Progress.js";
 
+import { runTests } from "../services/testing/testRunner.js";
+
 export const createSubmission = async (req, res) => {
     try {
         const { projectId, sprintId } = req.params;
         const { code, language } = req.body;
 
-        if (!code) {
+        // 1. Validate request
+        if (!code || !language) {
             return res.status(400).json({
                 success: false,
-                message: "Code is required"
+                message: "Code and language are required"
             });
         }
 
+        // 2. Find the sprint
         const sprint = await Sprint.findOne({
             _id: sprintId,
             projectId
@@ -26,6 +30,7 @@ export const createSubmission = async (req, res) => {
             });
         }
 
+        // 3. Find user's progress
         const progress = await Progress.findOne({
             userId: req.userId,
             projectId
@@ -38,37 +43,79 @@ export const createSubmission = async (req, res) => {
             });
         }
 
-        const isCurrent =
+        // 4. Make sure this is the current sprint
+        const isCurrentSprint =
             progress.currentSprint &&
             progress.currentSprint.toString() === sprintId;
 
-        if (!isCurrent) {
+        if (!isCurrentSprint) {
             return res.status(403).json({
                 success: false,
                 message: "You can only submit the current sprint"
             });
         }
 
+        // 5. Run automated tests
+        const testResult = await runTests({
+            language,
+            code,
+            functionName: sprint.functionName,
+            tests: sprint.tests
+        });
+
+        // 6. Determine submission status
+        const status = testResult.passed
+            ? "passed"
+            : "failed";
+
+        // 7. Store submission
         const submission = await Submission.create({
             userId: req.userId,
             projectId,
             sprintId,
-            language: language || "javascript",
+            language,
             code,
-            status: "pending"
+            status
         });
 
+        // 8. If tests passed, unlock next sprint
+        if (testResult.passed) {
+            progress.completedSprints.push(sprint._id);
+
+            const nextSprint = await Sprint.findOne({
+                projectId,
+                order: sprint.order + 1
+            });
+
+            if (nextSprint) {
+                progress.currentSprint = nextSprint._id;
+            } else {
+                progress.currentSprint = null;
+            }
+
+            await progress.save();
+        }
+
+        // 9. Return result
         res.status(201).json({
             success: true,
-            message: "Submission received",
-            data: submission
+            message: testResult.passed
+                ? "Submission passed"
+                : "Submission failed",
+
+            data: {
+                submission,
+                tests: testResult,
+                progress
+            }
         });
+
     } catch (error) {
         console.error("Create submission error:", error);
 
         res.status(500).json({
             success: false,
-            message: "Failed to create submission"
+            message: "Failed to process submission"
         });
     }
 };
