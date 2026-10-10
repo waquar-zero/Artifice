@@ -1,7 +1,9 @@
 import dotenv from "dotenv";
+
 dotenv.config();
 
 import mongoose from "mongoose";
+
 import connectDB from "./config/db.js";
 
 import Project from "./models/Project.js";
@@ -11,17 +13,30 @@ console.log("SEED FILE STARTED");
 
 const projectData = {
     title: "Build an HTTP Server",
+
     slug: "build-http-server",
+
     description:
         "Build a working HTTP server from scratch and understand what happens underneath a web framework.",
+
     difficulty: "intermediate",
+
     language: "javascript",
-    estimatedHours: 10
+
+    estimatedHours: 10,
+
+    execution: {
+        type: "process",
+        entrypoint: "server.js",
+        startCommand: "node server.js",
+        port: 3000
+    }
 };
 
 const sprintData = [
     {
         order: 1,
+
         title: "Accept TCP Connections",
 
         goal:
@@ -31,7 +46,7 @@ const sprintData = [
             "Create a TCP server",
             "Listen on a configurable port",
             "Accept incoming client connections",
-            "Respond to a client connection"
+            "When a client sends PING, respond with PONG"
         ],
 
         constraints: [
@@ -43,19 +58,43 @@ const sprintData = [
         definitionOfDone: [
             "Server starts successfully",
             "Client can establish a TCP connection",
-            "Server receives client data",
-            "Server can send a response"
+            "Server receives PING and responds with PONG"
         ],
 
         hints: [
             "What Node.js module provides low-level TCP networking?",
             "Look into Node's net module.",
             "A TCP server needs to listen for incoming connections."
-        ]
+        ],
+
+        testSpec: {
+            type: "tcp",
+
+            checks: [
+                {
+                    type: "server_starts"
+                },
+
+                {
+                    type: "tcp_connection"
+                },
+
+                {
+                    type: "receives_data",
+                    config: { payload: "PING\r\n", expectedText: "PONG" }
+                },
+
+                {
+                    type: "sends_response",
+                    config: { payload: "PING\r\n", expectedText: "PONG" }
+                }
+            ]
+        }
     },
 
     {
         order: 2,
+
         title: "Understand HTTP Requests",
 
         goal:
@@ -65,7 +104,8 @@ const sprintData = [
             "Receive an HTTP request",
             "Identify the HTTP method",
             "Identify the requested path",
-            "Identify the HTTP version"
+            "Identify the HTTP version",
+            "Include the parsed method, path and version in the response"
         ],
 
         constraints: [
@@ -77,18 +117,46 @@ const sprintData = [
             "Server can receive a raw HTTP request",
             "Method can be identified",
             "Path can be identified",
-            "HTTP version can be identified"
+            "HTTP version can be identified",
+            "The response to GET /probe HTTP/1.1 includes GET, /probe and HTTP/1.1"
         ],
 
         hints: [
             "HTTP requests are transmitted as text over TCP.",
             "Look at the first line of a raw HTTP request.",
             "The first line contains method, path and HTTP version."
-        ]
+        ],
+
+        testSpec: {
+            type: "tcp",
+
+            checks: [
+                {
+                    type: "server_starts"
+                },
+
+                {
+                    type: "http_request"
+                },
+
+                {
+                    type: "method_detection"
+                },
+
+                {
+                    type: "path_detection"
+                },
+
+                {
+                    type: "http_version_detection"
+                }
+            ]
+        }
     },
 
     {
         order: 3,
+
         title: "Build HTTP Responses",
 
         goal:
@@ -117,11 +185,44 @@ const sprintData = [
             "HTTP responses also have a defined textual structure.",
             "Look at the status line of an HTTP response.",
             "Headers and body are separated by a blank line."
-        ]
+        ],
+
+        testSpec: {
+            type: "http",
+
+            checks: [
+                {
+                    type: "server_starts"
+                },
+
+                {
+                    type: "http_response"
+                },
+
+                {
+                    type: "status_code"
+                },
+
+                {
+                    type: "headers",
+                    config: {
+                        header: "content-type"
+                    }
+                },
+
+                {
+                    type: "response_body",
+                    config: {
+                        expectedBody: "Hello"
+                    }
+                }
+            ]
+        }
     },
 
     {
         order: 4,
+
         title: "Implement Routing",
 
         goal:
@@ -149,11 +250,46 @@ const sprintData = [
             "You already have the requested path.",
             "What data structure could map a path to a handler?",
             "Think about a routing table."
-        ]
+        ],
+
+        testSpec: {
+            type: "http",
+            checks: [
+                {
+                    type: "server_starts"
+                },
+                {
+                    type: "route",
+                    config: {
+                        method: "GET",
+                        path: "/",
+                        expectedStatus: 200,
+                        expectedBody: "Hello"
+                    }
+                },
+                {
+                    type: "route",
+                    config: {
+                        method: "GET",
+                        path: "/about",
+                        expectedStatus: 200,
+                        expectedBody: "About"
+                    }
+                },
+                {
+                    type: "unknown_route",
+                    config: {
+                        path: "/does-not-exist",
+                        expectedStatus: 404
+                    }
+                }
+            ]
+        }
     },
 
     {
         order: 5,
+
         title: "Handle Multiple Requests",
 
         goal:
@@ -181,7 +317,34 @@ const sprintData = [
             "Node.js networking is event-driven.",
             "Think about what happens when multiple connections arrive.",
             "Separate connection handling from request parsing."
-        ]
+        ],
+
+        testSpec: {
+            type: "tcp",
+
+            checks: [
+                {
+                    type: "server_starts"
+                },
+
+                {
+                    type: "multiple_connections"
+                },
+
+                {
+                    type: "multiple_requests",
+                    config: { expectedText: "PONG" }
+                },
+
+                {
+                    type: "malformed_request"
+                },
+
+                {
+                    type: "server_stays_alive"
+                }
+            ]
+        }
     }
 ];
 
@@ -229,12 +392,15 @@ const seedDatabase = async () => {
         console.log("Sprints created");
 
         console.log("");
+
         console.log("==============================");
         console.log("Database seeded successfully");
         console.log("==============================");
+
         console.log(`Project: ${project.title}`);
         console.log(`Project ID: ${project._id}`);
         console.log(`Sprints: ${sprints.length}`);
+
         console.log("==============================");
 
         await mongoose.connection.close();
@@ -246,10 +412,13 @@ const seedDatabase = async () => {
     } catch (error) {
 
         console.error("");
+
         console.error("==============================");
         console.error("SEED FAILED");
         console.error("==============================");
+
         console.error(error);
+
         console.error("==============================");
 
         try {

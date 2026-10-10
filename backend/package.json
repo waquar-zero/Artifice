@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "test": "node test/testing.test.js",
+    "test:process": "node src/services/execution/testProcessRunner.js",
+    "test:http": "node src/services/testing/testHttpRunner.js",
+    "test:tcp": "node src/services/testing/testTcpRunner.js",
+    "test:integration": "node src/integration.test.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

@@ -14,7 +14,6 @@ const sprintSchema = new mongoose.Schema(
             trim: true
         },
 
-        // Main objective of the sprint
         goal: {
             type: String,
             required: true,
@@ -47,7 +46,6 @@ const sprintSchema = new mongoose.Schema(
             }
         ],
 
-        // Progressive hints
         hints: [
             {
                 type: String,
@@ -55,8 +53,7 @@ const sprintSchema = new mongoose.Schema(
             }
         ],
 
-        // Optional fields for function-based challenges.
-        // HTTP/server projects do not need these.
+        // Optional function-based challenge metadata
         functionName: {
             type: String,
             trim: true
@@ -72,7 +69,35 @@ const sprintSchema = new mongoose.Schema(
                     type: mongoose.Schema.Types.Mixed
                 }
             }
-        ]
+        ],
+
+        // Generic testing specification
+        testSpec: {
+            type: {
+                type: String,
+                enum: [
+                    "none",
+                    "function",
+                    "http",
+                    "tcp",
+                    "cli"
+                ],
+                default: "none"
+            },
+
+            checks: [
+                {
+                    type: {
+                        type: String,
+                        required: true
+                    },
+
+                    config: {
+                        type: mongoose.Schema.Types.Mixed
+                    }
+                }
+            ]
+        }
     },
     {
         timestamps: true

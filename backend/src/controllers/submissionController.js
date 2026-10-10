@@ -1,23 +1,48 @@
+
 import Submission from "../models/Submission.js";
 import Sprint from "../models/Sprint.js";
 import Progress from "../models/Progress.js";
+import Project from "../models/Project.js";
 
-import { runTests } from "../services/testing/testRunner.js";
+import { runTests } from "../services/testing/index.js";
 
 export const createSubmission = async (req, res) => {
     try {
         const { projectId, sprintId } = req.params;
         const { code, language } = req.body;
 
-        // 1. Validate request
-        if (!code || !language) {
+        // 1. Validate submitted data
+        if (
+            typeof code !== "string" ||
+            !code.trim() ||
+            typeof language !== "string" ||
+            !language.trim()
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "Code and language are required"
             });
         }
 
-        // 2. Find the sprint
+        // 2. Find the project
+        const project = await Project.findById(projectId);
+
+        if (!project) {
+            return res.status(404).json({
+                success: false,
+                message: "Project not found"
+            });
+        }
+
+        if (!project.execution) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Project execution configuration is missing"
+            });
+        }
+
+        // 3. Find the sprint belonging to this project
         const sprint = await Sprint.findOne({
             _id: sprintId,
             projectId
@@ -30,8 +55,8 @@ export const createSubmission = async (req, res) => {
             });
         }
 
-        // 3. Find user's progress
-        const progress = await Progress.findOne({
+        // 4. Check whether the user has started the project
+        let progress = await Progress.findOne({
             userId: req.userId,
             projectId
         });
@@ -43,7 +68,7 @@ export const createSubmission = async (req, res) => {
             });
         }
 
-        // 4. Make sure this is the current sprint
+        // 5. Only allow submissions for the current sprint
         const isCurrentSprint =
             progress.currentSprint &&
             progress.currentSprint.toString() === sprintId;
@@ -51,58 +76,103 @@ export const createSubmission = async (req, res) => {
         if (!isCurrentSprint) {
             return res.status(403).json({
                 success: false,
-                message: "You can only submit the current sprint"
+                message:
+                    "You can only submit the current sprint"
             });
         }
 
-        // 5. Run automated tests
-        const testResult = await runTests({
-            language,
-            code,
-            functionName: sprint.functionName,
-            tests: sprint.tests
-        });
+        // 6. Validate that the submitted language matches
+        // the language this project's execution setup supports.
+        if (
+            language.trim().toLowerCase() !==
+            project.language.trim().toLowerCase()
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    `This project requires ${project.language}`
+            });
+        }
 
-        // 6. Determine submission status
+        // 7. Run the sprint's generic test specification
+        let testResult;
+        try {
+            testResult = await runTests({
+                testSpec: sprint.testSpec,
+                code,
+                execution: project.execution
+            });
+        } catch (error) {
+            if (
+                error.message === "Test specification is missing" ||
+                error.message.startsWith("Unsupported test type:")
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            console.error("Submission execution failed:", error.message);
+            testResult = {
+                passed: false,
+                totalTests: sprint.testSpec?.checks?.length ?? 0,
+                passedTests: 0,
+                results: [],
+                error: "Execution failed"
+            };
+        }
+
+        // 8. Determine submission status
         const status = testResult.passed
             ? "passed"
             : "failed";
 
-        // 7. Store submission
+        // 9. Store the submission
         const submission = await Submission.create({
             userId: req.userId,
             projectId,
             sprintId,
-            language,
+            language: language.trim().toLowerCase(),
             code,
-            status
+            status,
+            testResults: testResult
         });
 
-        // 8. If tests passed, unlock next sprint
+        // 10. Advance progress only if every test passed
         if (testResult.passed) {
-            progress.completedSprints.push(sprint._id);
-
             const nextSprint = await Sprint.findOne({
                 projectId,
                 order: sprint.order + 1
             });
 
-            if (nextSprint) {
-                progress.currentSprint = nextSprint._id;
-            } else {
-                progress.currentSprint = null;
-            }
+            // Compare-and-set the current sprint to prevent two parallel
+            // passing submissions from advancing progress twice.
+            await Progress.updateOne(
+                {
+                    _id: progress._id,
+                    currentSprint: sprint._id
+                },
+                {
+                    $addToSet: { completedSprints: sprint._id },
+                    $set: {
+                        currentSprint: nextSprint?._id ?? null
+                    }
+                }
+            );
 
-            await progress.save();
+            const updatedProgress = await Progress.findById(progress._id);
+            if (updatedProgress) {
+                progress = updatedProgress;
+            }
         }
 
-        // 9. Return result
-        res.status(201).json({
+        // 11. Return the submission, tests and progress
+        return res.status(201).json({
             success: true,
             message: testResult.passed
                 ? "Submission passed"
                 : "Submission failed",
-
             data: {
                 submission,
                 tests: testResult,
@@ -111,9 +181,12 @@ export const createSubmission = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Create submission error:", error);
+        console.error(
+            "Create submission error:",
+            error
+        );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Failed to process submission"
         });
@@ -131,15 +204,18 @@ export const getSubmissions = async (req, res) => {
             .select("-code")
             .sort({ createdAt: -1 });
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             data: submissions
         });
 
     } catch (error) {
-        console.error("Get submissions error:", error);
+        console.error(
+            "Get submissions error:",
+            error
+        );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Failed to fetch submissions"
         });

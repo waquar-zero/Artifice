@@ -34,7 +34,25 @@ const projectSchema = new mongoose.Schema(
         estimatedHours: {
             type: Number,
             required: true
+        },
+        execution: {
+            type: {
+            type: String,
+            enum: ["process"],
+            default: "process"
+        },
+        entrypoint: {
+            type: String,
+            required: true
+        },
+        startCommand: {
+            type: String,
+            required: true
+        },
+        port: {
+            type: Number
         }
+    }
     },
     {
         timestamps: true

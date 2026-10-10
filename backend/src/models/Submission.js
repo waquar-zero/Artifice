@@ -36,6 +36,11 @@ const submissionSchema = new mongoose.Schema(
             type: String,
             enum: ["pending", "passed", "failed"],
             default: "pending"
+        },
+
+        testResults: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null
         }
     },
     {
