@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#79d47b" />
+  <title>Artifice — Learn by building</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="window-frame">
+    <div class="browser-bar" aria-hidden="true">
+      <i></i><i></i><i></i>
+      <div class="browser-address"><span>✦</span> app.artifice.dev</div>
+    </div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Artifice home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48"><path d="M7 15 24 6l17 9v19l-17 9L7 34z"/><path d="m7 15 17 10 17-10M24 25v19M16 10l17 10v8l-8 5v-8l-9-5z"/></svg>
+          </span>
+          <span>ARTIFICE</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <button class="nav-link active" data-view="projects"><span class="nav-icon">▰</span>Projects</button>
+          <button class="nav-link" data-view="learning"><span class="nav-icon book-icon">◧</span>My learning</button>
+          <button class="nav-link" data-view="submissions"><span class="nav-icon bars-icon">▥</span>Submissions</button>
+        </nav>
+
+        <div class="account-wrap">
+          <button class="account-button" id="accountButton" aria-expanded="false" aria-label="Account menu">
+            <span class="avatar" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#fff9e9" stroke="#171717" stroke-width="2"/><path d="M10 33c1-7 5-10 10-10s9 3 10 10" fill="#f5c997" stroke="#171717" stroke-width="2"/><path d="M11 18c0-8 4-12 10-12 7 0 10 5 9 12l-2 5-4-3h-9l-3 3z" fill="#222" stroke="#171717" stroke-width="2"/><circle cx="16" cy="18" r="1"/><circle cx="24" cy="18" r="1"/><path d="M17 23q3 3 6 0" fill="none" stroke="#171717" stroke-width="1.5"/></svg></span>
+            <span class="chevron">⌄</span>
+          </button>
+          <div class="account-menu" id="accountMenu" hidden>
+            <p id="accountLabel">You’re viewing a preview</p>
+            <button id="profileAction" hidden>View profile</button>
+            <button id="authAction">Log in</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar">
+          <p class="side-label">YOUR WORKSPACE</p>
+          <button class="all-projects" id="allProjects"><span class="tiny-icon">▦</span> All Projects</button>
+          <button class="project-pill selected" id="projectButton"><span class="project-list-icon">▤</span><span id="projectNameSide">Build an HTTP Server</span><span class="side-arrow">›</span></button>
+
+          <div class="sprint-heading"><span>SPRINTS</span><span class="heading-rule"></span></div>
+          <div class="sprint-list" id="sprintList" aria-label="Project sprints"></div>
+          <div class="sidebar-bottom"><span class="sparkle">✳</span><span>Small steps.<br/><b>Real software.</b></span><span class="mini-cube">◇</span></div>
+        </aside>
+
+        <section class="main-content">
+          <div class="project-heading">
+            <div>
+              <div class="eyebrow" id="projectDifficulty">PROJECT / JAVASCRIPT</div>
+              <h1 id="projectTitle">Build an HTTP Server</h1>
+              <p id="projectDescription">Learn networking by building from the ground up.</p>
+            </div>
+            <div class="landscape" aria-hidden="true">
+              <svg viewBox="0 0 390 120" preserveAspectRatio="xMidYMid meet">
+                <path d="M8 105 64 65l34 23 52-52 43 36 38-23 35 38 48-25 67 39"/><path d="m45 79 20-14 18 12M125 67l25-31 22 24M183 70l13-17 16 15M292 71l18-10 27 22"/>
+                <path d="M6 106q44-4 88 1t87 0q53-3 103 0t97-1"/>
+                <rect x="220" y="51" width="67" height="24" rx="4"/><rect x="220" y="78" width="67" height="24" rx="4"/><path d="M287 56l18-8v23l-18 5M287 82l18-9v22l-18 7M227 59h5m-5 27h5"/>
+                <path d="M42 30q4-13 19-8 10-12 24 0 13-2 14 10H43zM324 33q4-13 18-8 9-12 23 0 13-1 15 10h-57z"/>
+                <path d="m207 18-5-8m22 5 1-11m21 18 6-8"/>
+              </svg>
+            </div>
+          </div>
+
+          <article class="sprint-card">
+            <div class="sprint-copy">
+              <div class="eyebrow sprint-eyebrow"><span id="sprintNumber">SPRINT 02</span><span>/</span><span id="sprintCategory">NETWORKING BASICS</span></div>
+              <h2 id="sprintTitle">Understand HTTP Requests</h2>
+              <p class="sprint-goal" id="sprintGoal">Read the incoming request and identify its method, path, and HTTP version.</p>
+              <div class="section-divider"></div>
+              <section class="definition-card">
+                <h3><span class="flag-icon">⚑</span>Definition of done</h3>
+                <ul id="definitionList"></ul>
+              </section>
+            </div>
+
+            <div class="sprint-aside">
+              <div class="request-illustration" aria-label="Diagram of a raw HTTP request">
+                <div class="request-window">
+                  <div class="request-dots"><i></i><i></i><i></i></div>
+                  <div class="request-code"><span>›</span> GET / HTTP/1.1<br/><span>›</span> Host: localhost<br/><span>›</span> User-Agent: curl/8.0<br/><span>›</span> ...</div>
+                </div>
+                <svg class="arrows" viewBox="0 0 170 150" aria-hidden="true"><path d="M3 60q28-2 39-27t26-19M3 78q30 0 53 0t29 0M3 98q27 0 43 20t38 18"/><path d="m58 7 11 6-12 5m17 42-11 6 12 5m-34 51 11 2-4 11"/></svg>
+                <div class="parsed-fields"><div><b>METHOD</b><span>GET</span></div><div><b>PATH</b><span>/</span></div><div><b>VERSION</b><span>HTTP/1.1</span></div></div>
+                <span class="rays">✳</span>
+              </div>
+              <section class="hints-card">
+                <div class="hint-top"><h3><span class="bulb">♧</span>Hints</h3><span class="hint-count" id="hintCount">Hint 1 of 3</span><button class="hint-step" id="hintPrev" aria-label="Previous hint">‹</button><button class="hint-step next" id="hintNext" aria-label="Next hint">›</button></div>
+                <p id="hintText">Start by inspecting the first line of the request.</p>
+              </section>
+            </div>
+          </article>
+
+          <div class="workbench">
+            <section class="editor-panel" id="editorPanel">
+              <div class="editor-toolbar"><div class="file-tab"><span class="file-icon">▧</span><b>server.js</b><span>›</span></div><button class="expand-button" id="expandEditor" aria-label="Expand editor">⛶</button></div>
+              <div class="editor-body"><div class="line-numbers" id="lineNumbers">1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8</div><textarea id="codeEditor" spellcheck="false" aria-label="Your server.js code"></textarea></div>
+              <div class="editor-actions"><span class="save-status" id="saveStatus">Saved locally</span><button class="run-button" id="runTests"><span>▶</span> Run tests</button><kbd>Ctrl + Enter</kbd></div>
+            </section>
+
+            <aside class="tests-panel">
+              <div class="tests-heading"><h3>TESTS</h3><b id="testsSummary">2 / 3</b></div>
+              <div class="test-results" id="testResults"></div>
+              <div class="submission-feedback" id="submissionFeedback" hidden></div>
+            </aside>
+          </div>
+          <footer class="mobile-footer"><span>ARTIFICE / LEARN BY BUILDING</span><span>✳</span></footer>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="authDialog" class="auth-dialog">
+    <form id="authForm">
+      <button type="button" class="dialog-close" id="closeAuth" aria-label="Close">×</button>
+      <div class="eyebrow">WELCOME TO ARTIFICE</div>
+      <h2 id="authTitle">Log in to keep building</h2>
+      <label id="nameLabel" hidden>Your name<input id="authName" autocomplete="name" /></label>
+      <label>Email<input id="authEmail" type="email" required autocomplete="email" /></label>
+      <label>Password<input id="authPassword" type="password" required minlength="6" autocomplete="current-password" /></label>
+      <p class="auth-error" id="authError" role="alert"></p>
+      <button class="run-button auth-submit" type="submit" id="authSubmit">Log in</button>
+      <button type="button" class="auth-toggle" id="authToggle">Create an account</button>
+    </form>
+  </dialog>
+  <dialog id="profileDialog" class="profile-dialog" aria-labelledby="profileTitle">
+    <button type="button" class="dialog-close" id="closeProfile" aria-label="Close profile">×</button>
+    <div class="eyebrow">YOUR ARTIFICE ACCOUNT</div>
+    <h2 id="profileTitle">Your profile</h2>
+    <div id="profileContent" class="profile-content" aria-live="polite">
+      <p class="profile-loading">Loading your learning activity…</p>
+    </div>
+  </dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
