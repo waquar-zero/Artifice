@@ -8,6 +8,13 @@ import {
 
 export const testCode = async (req, res) => {
     try {
+        if (process.env.NODE_ENV === "production") {
+            return res.status(503).json({
+                success: false,
+                message: "Code execution is unavailable until a secure sandbox is configured"
+            });
+        }
+
         const { language, code } = req.body;
 
         if (!language || !code) {

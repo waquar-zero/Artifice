@@ -1,7 +1,9 @@
 import runJavaScript from "./runners/javascriptRunner.js";
+import runPython from "./runners/pythonRunner.js";
 
 const runners = {
-    javascript: runJavaScript
+    javascript: runJavaScript,
+    python: runPython
 };
 
 export const executeCode = async ({ language, code }) => {

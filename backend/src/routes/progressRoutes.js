@@ -1,6 +1,6 @@
 import express from "express";
 
-import { getProgress } from "../controllers/progressController.js";
+import { getProgress, restartProject } from "../controllers/progressController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -10,6 +10,12 @@ router.get(
     "/:projectId",
     authMiddleware,
     getProgress
+);
+
+router.post(
+    "/:projectId/restart",
+    authMiddleware,
+    restartProject
 );
 
 export default router;

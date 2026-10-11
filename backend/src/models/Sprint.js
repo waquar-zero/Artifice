@@ -57,6 +57,10 @@ const sprintSchema = new mongoose.Schema(
             type: String,
             default: ""
         },
+        starterCodeByLanguage: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
+        },
 
         // Optional function-based challenge metadata
         functionName: {

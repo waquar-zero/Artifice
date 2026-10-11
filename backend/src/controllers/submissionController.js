@@ -8,6 +8,13 @@ import { runTests } from "../services/testing/index.js";
 
 export const createSubmission = async (req, res) => {
     try {
+        if (process.env.NODE_ENV === "production") {
+            return res.status(503).json({
+                success: false,
+                message: "Code execution is unavailable until a secure sandbox is configured"
+            });
+        }
+
         const { projectId, sprintId } = req.params;
         const { code, language } = req.body;
 
@@ -90,14 +97,14 @@ export const createSubmission = async (req, res) => {
 
         // 6. Validate that the submitted language matches
         // the language this project's execution setup supports.
-        if (
-            language.trim().toLowerCase() !==
-            project.language.trim().toLowerCase()
-        ) {
+        const normalizedLanguage = language.trim().toLowerCase();
+        const supportedLanguages = project.supportedLanguages?.length
+            ? project.supportedLanguages.map((item) => item.toLowerCase())
+            : [project.language.trim().toLowerCase()];
+        if (!supportedLanguages.includes(normalizedLanguage)) {
             return res.status(400).json({
                 success: false,
-                message:
-                    `This project requires ${project.language}`
+                message: `This project supports ${supportedLanguages.join(" or ")}`
             });
         }
 
@@ -108,7 +115,7 @@ export const createSubmission = async (req, res) => {
                 testSpec: sprint.testSpec,
                 code,
                 execution: project.execution,
-                language: project.language,
+                language: normalizedLanguage,
                 functionName: sprint.functionName,
                 tests: sprint.tests
             });
@@ -153,7 +160,7 @@ export const createSubmission = async (req, res) => {
             userId: req.userId,
             projectId,
             sprintId,
-            language: language.trim().toLowerCase(),
+            language: normalizedLanguage,
             code,
             status,
             testResults: testResult

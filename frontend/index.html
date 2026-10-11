@@ -72,6 +72,17 @@
           <div class="catalog-grid" id="catalogGrid" aria-live="polite"></div>
         </section>
 
+        <section class="project-intro-view" id="projectIntro" aria-labelledby="introTitle" hidden>
+          <div class="project-intro-topline"><button class="intro-back" id="introBack" type="button">← Back to projects</button><span class="eyebrow">BEFORE YOU BUILD</span></div>
+          <header class="project-intro-heading">
+            <div class="catalog-card-meta"><span id="introDifficulty">BEGINNER</span><span id="introLanguage">JAVASCRIPT</span></div>
+            <h1 id="introTitle">Project introduction</h1>
+            <p id="introLead"></p>
+          </header>
+          <div class="learning-guide" id="learningGuide"></div>
+          <div class="intro-start-row"><div><b>Ready to build?</b><span>Start when you’re ready. You can work through the project one sprint at a time.</span></div><button class="run-button intro-start-button" id="startProject" type="button">Start project <span>›</span></button></div>
+        </section>
+
         <section class="main-content project-view" id="projectView">
           <div class="project-heading">
             <div>
@@ -121,7 +132,7 @@
 
           <div class="workbench">
             <section class="editor-panel" id="editorPanel">
-              <div class="editor-toolbar"><div class="file-tab"><span class="file-icon">▧</span><b>server.js</b><span>›</span></div><button class="expand-button" id="expandEditor" aria-label="Expand editor">⛶</button></div>
+              <div class="editor-toolbar"><div class="file-tab"><span class="file-icon">▧</span><b id="editorFileName">server.js</b><span>›</span></div><div class="editor-toolbar-controls"><label class="language-picker" id="languagePicker" hidden>Language<select id="languageSelect" aria-label="Choose coding language"></select></label><button class="expand-button" id="expandEditor" aria-label="Expand editor">⛶</button></div></div>
               <div class="editor-body"><div class="line-numbers" id="lineNumbers">1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8</div><textarea id="codeEditor" spellcheck="false" aria-label="Your server.js code"></textarea></div>
               <div class="editor-actions"><span class="save-status" id="saveStatus">Saved locally</span><button class="run-button" id="runTests"><span>▶</span> Run tests</button><kbd>Ctrl + Enter</kbd></div>
             </section>
@@ -130,6 +141,7 @@
               <div class="tests-heading"><h3>TESTS</h3><b id="testsSummary">2 / 3</b></div>
               <div class="test-results" id="testResults"></div>
               <div class="submission-feedback" id="submissionFeedback" hidden></div>
+              <button class="run-button restart-project-button" id="restartProject" type="button" hidden>↻ Do this project again</button>
             </aside>
           </div>
           <footer class="mobile-footer"><span>ARTIFICE / LEARN BY BUILDING</span><span>✳</span></footer>
@@ -153,8 +165,8 @@
   </dialog>
   <dialog id="profileDialog" class="profile-dialog" aria-labelledby="profileTitle">
     <button type="button" class="dialog-close" id="closeProfile" aria-label="Close profile">×</button>
-    <div class="eyebrow">YOUR ARTIFICE ACCOUNT</div>
-    <h2 id="profileTitle">Your profile</h2>
+    <div class="eyebrow">YOUR LEARNING SPACE</div>
+    <h2 id="profileTitle">My learning</h2>
     <div id="profileContent" class="profile-content" aria-live="polite">
       <p class="profile-loading">Loading your learning activity…</p>
     </div>
@@ -170,6 +182,14 @@
       <p class="post-error" id="postError" role="alert"></p>
       <button class="run-button post-submit" type="submit" id="postSubmit">Publish post</button>
     </form>
+  </dialog>
+  <dialog id="restartDialog" class="restart-dialog" aria-labelledby="restartTitle">
+    <button type="button" class="dialog-close" id="closeRestart" aria-label="Close restart warning">×</button>
+    <div class="eyebrow">START OVER</div>
+    <h2 id="restartTitle">Do this project again?</h2>
+    <p class="restart-warning">Restarting will permanently clear your previous code submissions and saved code for this project. You’ll begin again at the first sprint.</p>
+    <div class="restart-actions"><button class="restart-cancel" id="cancelRestart" type="button">Keep my work</button><button class="run-button" id="confirmRestart" type="button">Clear and restart</button></div>
+    <p class="restart-error" id="restartError" role="alert"></p>
   </dialog>
   <script type="module" src="./app.js"></script>
 </body>

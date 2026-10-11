@@ -30,6 +30,10 @@ const projectSchema = new mongoose.Schema(
             type: String,
             required: true
         },
+        supportedLanguages: [{
+            type: String,
+            enum: ["javascript", "python"]
+        }],
 
         estimatedHours: {
             type: Number,
@@ -39,6 +43,13 @@ const projectSchema = new mongoose.Schema(
             type: String,
             enum: ["active", "coming_soon"],
             default: "active"
+        },
+        learningGuide: {
+            introduction: { type: String, trim: true, default: "" },
+            sections: [{
+                title: { type: String, trim: true },
+                body: { type: String, trim: true }
+            }]
         },
         execution: {
             type: {

@@ -19,6 +19,7 @@ export default async function runFunctionTests({
     for (const [index, test] of tests.entries()) {
         const label = test.name || `Example ${index + 1}`;
         const testCode = generateTestCode({
+            language,
             code,
             functionName,
             input: test.input || []

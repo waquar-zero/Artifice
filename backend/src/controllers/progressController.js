@@ -1,6 +1,7 @@
 import Progress from "../models/Progress.js";
 import Project from "../models/Project.js";
 import Sprint from "../models/Sprint.js";
+import Submission from "../models/Submission.js";
 
 export const getProgress = async (req, res) => {
     try {
@@ -60,6 +61,50 @@ export const getProgress = async (req, res) => {
             success: false,
             message: "Failed to fetch progress"
         });
+    }
+};
+
+export const restartProject = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const project = await Project.findById(projectId);
+
+        if (!project) {
+            return res.status(404).json({ success: false, message: "Project not found" });
+        }
+        if (project.availability === "coming_soon") {
+            return res.status(403).json({ success: false, message: "This project is currently on hold" });
+        }
+
+        const progress = await Progress.findOne({ userId: req.userId, projectId });
+        if (!progress || progress.currentSprint) {
+            return res.status(409).json({ success: false, message: "You can restart this project after completing it" });
+        }
+
+        const firstSprint = await Sprint.findOne({ projectId }).sort({ order: 1 });
+        if (!firstSprint) {
+            return res.status(404).json({ success: false, message: "Project has no sprints" });
+        }
+
+        await Submission.deleteMany({ userId: req.userId, projectId });
+        const restarted = await Progress.findOneAndUpdate(
+            { userId: req.userId, projectId, currentSprint: null },
+            { $set: { currentSprint: firstSprint._id, completedSprints: [] } },
+            { new: true }
+        ).populate("currentSprint");
+
+        if (!restarted) {
+            return res.status(409).json({ success: false, message: "Project progress changed. Refresh and try again" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Project restarted. Previous submissions were cleared.",
+            data: restarted
+        });
+    } catch (error) {
+        console.error("Restart project error:", error);
+        return res.status(500).json({ success: false, message: "Failed to restart project" });
     }
 };
 

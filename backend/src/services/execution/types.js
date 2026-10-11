@@ -1,3 +1,4 @@
 export const SUPPORTED_LANGUAGES = [
-    "javascript"
+    "javascript",
+    "python"
 ];

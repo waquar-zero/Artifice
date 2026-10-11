@@ -28,6 +28,16 @@ const projectData = {
 
     availability: "coming_soon",
 
+    learningGuide: {
+        introduction: "Build an HTTP server from the ground up and learn how web requests are received, interpreted, and answered.",
+        sections: [
+            { title: "What is an HTTP server?", body: "An HTTP server accepts requests from clients, reads details such as the method and URL, and sends back a status, headers, and response body." },
+            { title: "Why learn how it works?", body: "Understanding the protocol helps explain what frameworks do for you and makes it easier to debug APIs and web applications." },
+            { title: "How will you implement it?", body: "You’ll work from raw TCP connections toward parsing HTTP requests, building responses, routing URLs, and handling multiple requests." },
+            { title: "What you’ll practice", body: "The project is currently on hold. Its learning guide is here so the project catalog can use the same introduction flow when it becomes available." }
+        ]
+    },
+
     execution: {
         type: "process",
         entrypoint: "server.js",

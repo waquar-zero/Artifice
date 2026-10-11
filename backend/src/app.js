@@ -19,7 +19,20 @@ const frontendDirectory = path.resolve(
     "../../frontend"
 );
 
-app.use(cors());
+const allowedOrigins = new Set(
+    (process.env.CORS_ORIGINS || "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+);
+
+app.use(cors({
+    origin(origin, callback) {
+        // Same-origin requests do not need CORS; allow command-line and server-to-server calls.
+        if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+        return callback(null, false);
+    }
+}));
 app.use(express.json());
 app.use(express.static(frontendDirectory));
 

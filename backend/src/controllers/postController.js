@@ -45,6 +45,19 @@ export const listPosts = async (req, res) => {
     }
 };
 
+export const listMyPosts = async (req, res) => {
+    try {
+        const posts = await Post.find({ authorId: req.userId })
+            .sort({ createdAt: -1 })
+            .populate("authorId", "name");
+
+        return res.status(200).json({ success: true, data: posts });
+    } catch (error) {
+        console.error("List my posts error:", error);
+        return res.status(500).json({ success: false, message: "Failed to load your posts" });
+    }
+};
+
 export const createPost = async (req, res) => {
     try {
         const fields = readPostFields(req.body);
