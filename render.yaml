@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: artifice
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: cd backend && npm ci --omit=dev
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
