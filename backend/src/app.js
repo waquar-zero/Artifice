@@ -11,6 +11,7 @@ import hintRoutes from "./routes/hintRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
 import runnerRoutes from "./routes/runnerRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import postRoutes from "./routes/postRoutes.js";
 
 const app = express();
 const frontendDirectory = path.resolve(
@@ -37,5 +38,6 @@ app.use("/api/sprints", hintRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/runner", runnerRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/posts", postRoutes);
 
 export default app;

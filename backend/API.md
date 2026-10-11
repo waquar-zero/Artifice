@@ -8,6 +8,10 @@ Base URL: `http://localhost:5000/api`. JSON requests use `Content-Type: applicat
 | `POST /auth/login` | No | `{ email, password }` | `200 { success, message, data: { token, user } }`; token lasts 7 days |
 | `GET /auth/me` | Yes | — | `200 { success, data: user }` |
 | `GET /profile` | Yes | — | `200 { success, data: { user, projects, submissions } }`; own project progress and code attempts |
+| `GET /posts` | No | — | `200 { success, data: Post[] }`; latest 30 community posts with author names |
+| `POST /posts` | Yes | `{ title, topic?, body }` | `201 { success, data: Post }`; title 4–120 chars, body 10–5000 chars |
+| `PATCH /posts/:postId` | Yes, owner | `{ title, topic?, body }` | `200 { success, data: Post }`; updates the caller’s post |
+| `DELETE /posts/:postId` | Yes, owner | — | `200 { success, message }`; deletes the caller’s post |
 | `GET /projects` | No | — | `200 { success, count, data: Project[] }` |
 | `GET /projects/:id` | No | — | `200 { success, data: Project }` |
 | `GET /sprints/project/:projectId` | No | — | `200 { success, count, data: Sprint[] }`, ordered by `order` |
@@ -20,7 +24,7 @@ Base URL: `http://localhost:5000/api`. JSON requests use `Content-Type: applicat
 
 Validation failures generally return `400`, missing records `404`, authentication failures `401`, and access/progress failures `403`. Duplicate registration returns `409`. Submission test details are in `data.tests` and persisted on `submission.testResults`; history omits submitted source code. A passing final sprint returns `progress.currentSprint: null` and all completed sprint IDs.
 
-`GET /profile` returns only records belonging to the authenticated user, including their own submitted source code. `GET /progress/:projectId` is the start/resume operation. There is intentionally no client-facing completion endpoint; only a passing submission advances progress. Project and sprint reads are public. The current CORS middleware permits all origins for local integration; restrict it before deployment.
+`GET /profile` returns only records belonging to the authenticated user, including their own submitted source code. Community posts are public to read and require authentication to publish. `GET /progress/:projectId` is the start/resume operation. There is intentionally no client-facing completion endpoint; only a passing submission advances progress. Project and sprint reads are public. The current CORS middleware permits all origins for local integration; restrict it before deployment.
 
 ## Current runner scope
 

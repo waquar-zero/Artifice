@@ -16,7 +16,7 @@ const server = net.createServer((socket) => {
 });`;
 
 const $ = (id) => document.getElementById(id);
-const state = { projects: [], project: null, sprints: DEMO_SPRINTS, current: 1, completed: new Set([0]), hints: 1, token: localStorage.getItem("artifice-token"), signup: false, preview: true, latestResults: null };
+const state = { projects: [], project: null, sprints: DEMO_SPRINTS, current: 1, completed: new Set([0]), hints: 1, token: localStorage.getItem("artifice-token"), userId: null, signup: false, preview: true, latestResults: null, view: "community", posts: [], openPostAfterAuth: false, editingPostId: null, projectQuery: "" };
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -42,32 +42,112 @@ async function loadWorkspace() {
   try {
     const result = await api("/projects");
     state.projects = result.data || [];
-    state.project = state.projects.find((p) => p.slug === "build-http-server") || state.projects[0] || fallbackProject();
-    if (state.project._id !== "demo") {
+  } catch {
+    state.projects = [];
+  }
+  if (state.token) {
+    try {
+      const me = await api("/auth/me");
+      state.userId = String(me.data?._id || "");
+    } catch (error) {
+      if (error.status === 401) {
+        localStorage.removeItem("artifice-token");
+        state.token = null;
+        state.userId = null;
+      }
+      state.userId = null;
+    }
+  } else state.userId = null;
+  state.project = state.projects.find((project) => project.slug === "build-http-server") || state.projects[0] || fallbackProject();
+  renderProjectChoices();
+  renderProjectCatalog();
+  updateAccount();
+  renderCommunity();
+  loadPosts();
+}
+
+async function selectProject(projectId) {
+  state.project = state.projects.find((project) => String(project._id) === String(projectId)) || fallbackProject();
+  state.view = "projects";
+  state.sprints = DEMO_SPRINTS;
+  state.current = 0;
+  state.completed = new Set();
+  state.latestResults = null;
+  delete $("codeEditor").dataset.dirty;
+  setView("projects");
+  renderProjectChoices();
+
+  if (state.project._id !== "demo") {
+    try {
       const sprintResult = await api(`/sprints/project/${state.project._id}`);
       state.sprints = sprintResult.data?.length ? sprintResult.data : DEMO_SPRINTS;
-    }
-  } catch {
-    state.project = fallbackProject();
-    state.projects = [state.project];
-    state.sprints = DEMO_SPRINTS;
-  }
-
-  if (state.token && state.project?._id !== "demo") {
-    try {
-      const progress = (await api(`/progress/${state.project._id}`)).data;
+      if (!state.token) {
+        state.preview = true;
+        state.current = Math.min(1, state.sprints.length - 1);
+      } else {
+        const progress = (await api(`/progress/${state.project._id}`)).data;
       state.completed = new Set((progress.completedSprints || []).map((id) => state.sprints.findIndex((s) => String(s._id) === String(id?._id || id))).filter((i) => i >= 0));
       const currentId = progress.currentSprint?._id || progress.currentSprint;
       state.current = currentId ? Math.max(0, state.sprints.findIndex((s) => String(s._id) === String(currentId))) : Math.max(0, state.sprints.length - 1);
       state.preview = false;
-    } catch {
+      }
+    } catch (error) {
       state.current = 0;
       state.completed = new Set();
-      state.preview = false;
+      state.preview = !state.token;
+      if (error.status === 401) {
+        localStorage.removeItem("artifice-token");
+        state.token = null;
+        state.preview = true;
+        updateAccount();
+      }
     }
   }
   render();
-  updateAccount();
+}
+
+function setView(view) {
+  state.view = view;
+  $("communityView").hidden = view !== "community";
+  $("projectCatalog").hidden = view !== "catalog";
+  $("projectView").hidden = view !== "projects";
+  $("sprintNavigation").hidden = view !== "projects";
+  const activeNav = view === "catalog" ? "projects" : view;
+  document.querySelectorAll(".nav-link").forEach((button) => button.classList.toggle("active", button.dataset.view === activeNav));
+  if (view === "community") renderCommunity();
+  if (view === "catalog") renderProjectCatalog();
+}
+
+function renderProjectChoices() {
+  const choices = matchingProjects();
+  $("projectChoices").innerHTML = choices.length ? choices.map((project) => `
+    <button class="project-choice ${state.view === "projects" && String(project._id) === String(state.project?._id) ? "selected" : ""}" data-project="${escapeHtml(project._id)}">
+      <span class="project-list-icon">▤</span><span class="project-choice-copy"><b>${escapeHtml(project.title || "Untitled project")}</b><small>${escapeHtml(project.difficulty || "Project")}${project.language ? ` · ${escapeHtml(project.language)}` : ""}</small></span><span class="side-arrow">›</span>
+    </button>`).join("") : '<p class="project-search-empty">No projects match your search.</p>';
+  $("projectChoices").querySelectorAll("[data-project]").forEach((button) => button.addEventListener("click", () => selectProject(button.dataset.project)));
+}
+
+function matchingProjects() {
+  const projects = state.projects.length ? state.projects : [fallbackProject()];
+  const query = state.projectQuery.trim().toLocaleLowerCase();
+  if (!query) return projects;
+  return projects.filter((project) => [project.title, project.description, project.language, project.difficulty]
+    .some((value) => String(value || "").toLocaleLowerCase().includes(query)));
+}
+
+function renderProjectCatalog() {
+  const projects = matchingProjects();
+  $("catalogGrid").innerHTML = projects.length ? projects.map((project) => `
+    <article class="catalog-card">
+      <div class="catalog-card-art" aria-hidden="true"><span>▤</span><i>✳</i></div>
+      <div class="catalog-card-content">
+        <div class="catalog-card-meta"><span>${escapeHtml(project.difficulty || "Project")}</span><span>${escapeHtml(project.language || "Self-paced")}</span></div>
+        <h2>${escapeHtml(project.title || "Untitled project")}</h2>
+        <p>${escapeHtml(project.description || "A hands-on project to build your skills step by step.")}</p>
+        <div class="catalog-card-footer"><span>${project.estimatedHours ? `${escapeHtml(project.estimatedHours)} hour${Number(project.estimatedHours) === 1 ? "" : "s"}` : "Learn at your own pace"}</span><button class="run-button" data-open-project="${escapeHtml(project._id)}">Choose project <span>›</span></button></div>
+      </div>
+    </article>`).join("") : '<p class="catalog-empty">No projects match your search. Try another title, language, or skill level.</p>';
+  $("catalogGrid").querySelectorAll("[data-open-project]").forEach((button) => button.addEventListener("click", () => selectProject(button.dataset.openProject)));
 }
 
 function render() {
@@ -75,7 +155,6 @@ function render() {
   const sprint = state.sprints[state.current] || DEMO_SPRINTS[state.current] || DEMO_SPRINTS[0];
   const projectTitle = state.project.title || "Build an HTTP Server";
   $("projectTitle").textContent = projectTitle;
-  $("projectNameSide").textContent = projectTitle;
   $("projectDescription").textContent = state.project.description || "Learn networking by building from the ground up.";
   $("projectDifficulty").textContent = `PROJECT  /  ${(state.project.language || "javascript").toUpperCase()}`;
   $("sprintNumber").textContent = `SPRINT ${String(sprint.order || state.current + 1).padStart(2, "0")}`;
@@ -86,12 +165,134 @@ function render() {
   renderDefinition(sprint);
   renderHints(sprint);
   renderTests(sprint);
+  renderProjectChoices();
 
   const codeKey = getCodeKey(sprint);
   if (!$("codeEditor").dataset.dirty) {
     $("codeEditor").value = localStorage.getItem(codeKey) || starterFor(sprint);
   }
   syncLines();
+}
+
+function postDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Recently" : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function renderCommunity() {
+  const posts = state.posts || [];
+  $("feedCount").textContent = `${posts.length} ${posts.length === 1 ? "post" : "posts"}`;
+  $("communityFeed").innerHTML = posts.length ? posts.map((post) => {
+    const author = post.authorId?.name || "Artifice member";
+    const isOwner = state.token && state.userId && String(post.authorId?._id) === state.userId;
+    const initials = author.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "A";
+    return `<article class="community-post">
+      <div class="post-author"><span class="post-avatar" aria-hidden="true">${escapeHtml(initials)}</span><div><b>${escapeHtml(author)}</b><time datetime="${escapeHtml(post.createdAt || "")}">${escapeHtml(postDate(post.createdAt))}${post.updatedAt && post.updatedAt !== post.createdAt ? " · edited" : ""}</time></div><span class="post-topic">${escapeHtml(post.topic || "Tech")}</span>${isOwner ? `<div class="post-owner-actions"><button type="button" data-edit-post="${escapeHtml(post._id)}">Edit</button><button type="button" class="delete-post-button" data-delete-post="${escapeHtml(post._id)}">Delete</button></div>` : ""}</div>
+      <h2>${escapeHtml(post.title)}</h2><p class="post-copy">${escapeHtml(post.body)}</p>
+    </article>`;
+  }).join("") : `<section class="feed-empty"><span class="empty-sparkle">✳</span><h2>It’s quiet here—for now.</h2><p>The community is just getting started. Share a tech idea, a question, or something you learned and start the first conversation.</p><button class="run-button" id="emptyWritePost"><span>＋</span> Write the first post</button></section>`;
+  $("emptyWritePost")?.addEventListener("click", openPostComposer);
+  $("communityFeed").querySelectorAll("[data-edit-post]").forEach((button) => button.addEventListener("click", () => editPost(button.dataset.editPost)));
+  $("communityFeed").querySelectorAll("[data-delete-post]").forEach((button) => button.addEventListener("click", () => removePost(button.dataset.deletePost)));
+}
+
+async function loadPosts() {
+  $("communityFeed").innerHTML = '<p class="feed-loading">Loading the community…</p>';
+  try {
+    const result = await api("/posts");
+    state.posts = result.data || [];
+    renderCommunity();
+  } catch (error) {
+    $("communityFeed").innerHTML = `<p class="feed-error">${escapeHtml(error.message || "Could not load posts. Please refresh to try again.")}</p>`;
+  }
+}
+
+function openPostComposer() {
+  if (!state.token) {
+    state.openPostAfterAuth = true;
+    openAuth();
+    return;
+  }
+  state.editingPostId = null;
+  $("postForm").reset();
+  $("postDialogTitle").textContent = "Write a tech post";
+  $("postSubmit").textContent = "Publish post";
+  $("postError").textContent = "";
+  $("postDialog").showModal();
+}
+
+function editPost(postId) {
+  const post = state.posts.find((item) => String(item._id) === String(postId));
+  if (!post) return;
+  state.editingPostId = String(postId);
+  $("postTitle").value = post.title || "";
+  $("postTopic").value = post.topic || "";
+  $("postBody").value = post.body || "";
+  $("postDialogTitle").textContent = "Edit your post";
+  $("postSubmit").textContent = "Save changes";
+  $("postError").textContent = "";
+  $("postDialog").showModal();
+}
+
+async function removePost(postId) {
+  if (!window.confirm("Delete this post? This can’t be undone.")) return;
+  try {
+    await api(`/posts/${encodeURIComponent(postId)}`, { method: "DELETE" });
+    state.posts = state.posts.filter((post) => String(post._id) !== String(postId));
+    renderCommunity();
+  } catch (error) {
+    if (error.status === 401) {
+      localStorage.removeItem("artifice-token");
+      state.token = null;
+      state.userId = null;
+      updateAccount();
+      renderCommunity();
+      openAuth();
+      return;
+    }
+    window.alert(error.message || "Could not delete the post.");
+  }
+}
+
+async function publishPost(event) {
+  event.preventDefault();
+  const button = $("postSubmit");
+  button.disabled = true;
+  button.textContent = "Publishing…";
+  $("postError").textContent = "";
+  try {
+    const result = await api(state.editingPostId ? `/posts/${encodeURIComponent(state.editingPostId)}` : "/posts", {
+      method: state.editingPostId ? "PATCH" : "POST",
+      body: {
+        title: $("postTitle").value,
+        topic: $("postTopic").value,
+        body: $("postBody").value
+      }
+    });
+    state.posts = state.editingPostId
+      ? state.posts.map((post) => String(post._id) === state.editingPostId ? result.data : post)
+      : [result.data, ...state.posts];
+    state.editingPostId = null;
+    $("postForm").reset();
+    $("postDialog").close();
+    setView("community");
+    renderCommunity();
+  } catch (error) {
+    if (error.status === 401) {
+      localStorage.removeItem("artifice-token");
+      state.token = null;
+      state.userId = null;
+      updateAccount();
+      $("postDialog").close();
+      state.openPostAfterAuth = true;
+      openAuth();
+      return;
+    }
+    $("postError").textContent = error.message || "Could not publish your post.";
+  } finally {
+    button.disabled = false;
+    button.textContent = state.editingPostId ? "Save changes" : "Publish post";
+  }
 }
 
 function renderSprints() {
@@ -224,6 +425,7 @@ async function openProfile() {
     if (error.status === 401) {
       localStorage.removeItem("artifice-token");
       state.token = null;
+      state.userId = null;
       updateAccount();
       $("profileDialog").close();
       openAuth();
@@ -292,6 +494,7 @@ async function submitCode() {
     if (error.status === 401) {
       localStorage.removeItem("artifice-token");
       state.token = null;
+      state.userId = null;
       updateAccount();
       openAuth();
     }
@@ -309,11 +512,20 @@ $("accountButton").addEventListener("click", () => {
 });
 $("profileAction").addEventListener("click", openProfile);
 $("closeProfile").addEventListener("click", () => $("profileDialog").close());
+$("writePostButton").addEventListener("click", openPostComposer);
+$("projectSearch").addEventListener("input", (event) => {
+  state.projectQuery = event.target.value;
+  renderProjectChoices();
+  renderProjectCatalog();
+});
+$("closePost").addEventListener("click", () => $("postDialog").close());
+$("postForm").addEventListener("submit", publishPost);
 $("authAction").addEventListener("click", () => {
   $("accountMenu").hidden = true;
   if (state.token) {
     localStorage.removeItem("artifice-token");
     state.token = null;
+    state.userId = null;
     state.preview = true;
     state.current = 1;
     state.completed = new Set([0]);
@@ -331,9 +543,14 @@ $("authForm").addEventListener("submit", async (event) => {
     if (state.signup) await api("/auth/register", { method: "POST", body: payload });
     const login = await api("/auth/login", { method: "POST", body: { email: payload.email, password: payload.password } });
     state.token = login.data.token;
+    state.userId = String(login.data.user?.id || "");
     localStorage.setItem("artifice-token", state.token);
     $("authDialog").close();
     await loadWorkspace();
+    if (state.openPostAfterAuth) {
+      state.openPostAfterAuth = false;
+      openPostComposer();
+    }
   } catch (error) { $("authError").textContent = error.message; }
 });
 $("hintPrev").addEventListener("click", () => { state.hints = Math.max(1, state.hints - 1); renderHints(state.sprints[state.current]); });
@@ -366,15 +583,18 @@ $("codeEditor").addEventListener("keydown", (event) => {
   if (event.key === "Tab") { event.preventDefault(); const start = event.target.selectionStart; event.target.setRangeText("  ", start, event.target.selectionEnd, "end"); event.target.dispatchEvent(new Event("input")); }
 });
 $("expandEditor").addEventListener("click", () => $("editorPanel").requestFullscreen?.());
-$("allProjects").addEventListener("click", () => showMessage("Your project library is coming soon."));
-$("projectButton").addEventListener("click", () => showMessage("You’re working on this project."));
 document.querySelectorAll(".nav-link").forEach((button) => button.addEventListener("click", () => {
-  document.querySelectorAll(".nav-link").forEach((item) => item.classList.toggle("active", item === button));
-  if (button.dataset.view !== "projects") showMessage(`${button.textContent.trim()} will be available in your learning dashboard.`);
+  if (button.dataset.view === "community") setView("community");
+  if (button.dataset.view === "projects") setView("catalog");
+  if (button.dataset.view === "learning") {
+    if (state.token) openProfile();
+    else openAuth();
+  }
 }));
 
 setAuthMode(false);
 state.project = fallbackProject();
 state.projects = [state.project];
+setView("community");
 render();
 loadWorkspace();

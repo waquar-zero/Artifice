@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#79d47b" />
-  <title>Artifice — Learn by building</title>
+  <title>Artifice — Tech community &amp; project learning</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -24,9 +24,9 @@
         </a>
 
         <nav class="main-nav" aria-label="Main navigation">
-          <button class="nav-link active" data-view="projects"><span class="nav-icon">▰</span>Projects</button>
+          <button class="nav-link active" data-view="community"><span class="nav-icon">▤</span>Community</button>
+          <button class="nav-link" data-view="projects"><span class="nav-icon">▰</span>Projects</button>
           <button class="nav-link" data-view="learning"><span class="nav-icon book-icon">◧</span>My learning</button>
-          <button class="nav-link" data-view="submissions"><span class="nav-icon bars-icon">▥</span>Submissions</button>
         </nav>
 
         <div class="account-wrap">
@@ -44,16 +44,35 @@
 
       <div class="workspace">
         <aside class="sidebar">
-          <p class="side-label">YOUR WORKSPACE</p>
-          <button class="all-projects" id="allProjects"><span class="tiny-icon">▦</span> All Projects</button>
-          <button class="project-pill selected" id="projectButton"><span class="project-list-icon">▤</span><span id="projectNameSide">Build an HTTP Server</span><span class="side-arrow">›</span></button>
-
-          <div class="sprint-heading"><span>SPRINTS</span><span class="heading-rule"></span></div>
-          <div class="sprint-list" id="sprintList" aria-label="Project sprints"></div>
-          <div class="sidebar-bottom"><span class="sparkle">✳</span><span>Small steps.<br/><b>Real software.</b></span><span class="mini-cube">◇</span></div>
+          <p class="side-label">PROJECTS TO BUILD</p>
+          <label class="project-search"><span aria-hidden="true">⌕</span><input id="projectSearch" type="search" placeholder="Search projects" autocomplete="off" aria-label="Search projects" /></label>
+          <div class="project-choices" id="projectChoices" aria-label="Choose a project"></div>
+          <div id="sprintNavigation" hidden>
+            <div class="sprint-heading"><span>SPRINTS</span><span class="heading-rule"></span></div>
+            <div class="sprint-list" id="sprintList" aria-label="Project sprints"></div>
+          </div>
         </aside>
 
-        <section class="main-content">
+        <section class="community-view" id="communityView" aria-label="Community feed">
+          <header class="community-heading">
+            <div><div class="eyebrow">ARTIFICE COMMUNITY</div><h1>Ideas worth building on.</h1><p>Notes, questions, and discoveries from people who love making things with tech.</p></div>
+            <button class="run-button write-post-button" id="writePostButton"><span>＋</span> Write a post</button>
+          </header>
+          <div class="feed-toolbar"><div><span class="feed-dot"></span><b>Latest posts</b><span class="feed-count" id="feedCount">0 posts</span></div><span class="feed-sort">New conversations first</span></div>
+          <div class="community-feed" id="communityFeed" aria-live="polite"><p class="feed-loading">Loading the community…</p></div>
+          <footer class="mobile-footer"><span>ARTIFICE / COMMUNITY</span><span>✳</span></footer>
+        </section>
+
+        <section class="catalog-view" id="projectCatalog" aria-label="Project library" hidden>
+          <header class="catalog-heading">
+            <div class="eyebrow">LEARN BY BUILDING</div>
+            <h1>Choose your next project.</h1>
+            <p>Pick a project to open its sprints, write code, and learn as you build.</p>
+          </header>
+          <div class="catalog-grid" id="catalogGrid" aria-live="polite"></div>
+        </section>
+
+        <section class="main-content project-view" id="projectView">
           <div class="project-heading">
             <div>
               <div class="eyebrow" id="projectDifficulty">PROJECT / JAVASCRIPT</div>
@@ -139,6 +158,18 @@
     <div id="profileContent" class="profile-content" aria-live="polite">
       <p class="profile-loading">Loading your learning activity…</p>
     </div>
+  </dialog>
+  <dialog id="postDialog" class="post-dialog" aria-labelledby="postDialogTitle">
+    <form id="postForm">
+      <button type="button" class="dialog-close" id="closePost" aria-label="Close">×</button>
+      <div class="eyebrow">SHARE WITH THE COMMUNITY</div>
+      <h2 id="postDialogTitle">Write a tech post</h2>
+      <label>Title<input id="postTitle" name="title" required minlength="4" maxlength="120" placeholder="What have you been thinking about?" /></label>
+      <label>Topic <span class="optional-label">(optional)</span><input id="postTopic" name="topic" maxlength="32" placeholder="e.g. Web development" /></label>
+      <label>Your post<textarea id="postBody" name="body" required minlength="10" maxlength="5000" rows="7" placeholder="Share an idea, question, lesson, or project update…"></textarea></label>
+      <p class="post-error" id="postError" role="alert"></p>
+      <button class="run-button post-submit" type="submit" id="postSubmit">Publish post</button>
+    </form>
   </dialog>
   <script type="module" src="./app.js"></script>
 </body>
