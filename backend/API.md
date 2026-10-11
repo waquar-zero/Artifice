@@ -4,7 +4,9 @@ Base URL: `http://localhost:5000/api`. JSON requests use `Content-Type: applicat
 
 | Method and path | Auth | Request | Success |
 | --- | --- | --- | --- |
-| `POST /auth/register` | No | `{ name, email, password }` | `201 { success, message, data: { id, name, email } }` |
+| `GET /auth/config` | No | — | `200 { success, data: { googleClientId } }`; publishes the Google web client ID for the sign-in button |
+| `POST /auth/google` | No | `{ credential }` (Google Identity Services ID token) | `200 { success, message, data: { token, user } }`; backend verifies the token audience and verified email, then creates or links the account |
+| `POST /auth/register` | No | — | `410`; public password signup is disabled so new accounts must use verified Google sign-in |
 | `POST /auth/login` | No | `{ email, password }` | `200 { success, message, data: { token, user } }`; token lasts 7 days |
 | `GET /auth/me` | Yes | — | `200 { success, data: user }` |
 | `GET /profile` | Yes | — | `200 { success, data: { user, projects, submissions } }`; own project progress and code attempts |

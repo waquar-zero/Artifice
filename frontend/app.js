@@ -16,7 +16,7 @@ const server = net.createServer((socket) => {
 });`;
 
 const $ = (id) => document.getElementById(id);
-const state = { projects: [], project: null, sprints: DEMO_SPRINTS, current: 1, completed: new Set([0]), projectCompleted: false, language: "javascript", hints: 1, token: localStorage.getItem("artifice-token"), userId: null, signup: false, preview: true, latestResults: null, view: "community", posts: [], myPosts: [], profileData: null, learningTab: "projects", openPostAfterAuth: false, openLearningAfterAuth: false, editingPostId: null, projectQuery: "" };
+const state = { projects: [], project: null, sprints: DEMO_SPRINTS, current: 1, completed: new Set([0]), projectCompleted: false, language: "javascript", hints: 1, token: localStorage.getItem("artifice-token"), userId: null, preview: true, latestResults: null, view: "community", posts: [], myPosts: [], profileData: null, learningTab: "projects", openPostAfterAuth: false, openLearningAfterAuth: false, editingPostId: null, projectQuery: "", googleInitialized: false, googleClientId: "", passwordLoginVisible: false };
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -522,16 +522,67 @@ async function openProfile() {
 function openAuth() {
   $("authError").textContent = "";
   $("authDialog").showModal();
+  initGoogleSignIn();
 }
 
-function setAuthMode(signup) {
-  state.signup = signup;
-  $("authTitle").textContent = signup ? "Create your Artifice account" : "Log in to keep building";
-  $("authSubmit").textContent = signup ? "Create account" : "Log in";
-  $("authToggle").textContent = signup ? "Already have an account? Log in" : "Create an account";
-  $("nameLabel").hidden = !signup;
-  $("authName").required = signup;
-  $("authPassword").autocomplete = signup ? "new-password" : "current-password";
+async function initGoogleSignIn() {
+  const status = $("googleStatus");
+  status.textContent = "";
+  try {
+    if (!state.googleClientId) {
+      const config = await api("/auth/config");
+      state.googleClientId = config.data?.googleClientId || "";
+    }
+    if (!state.googleClientId) {
+      status.textContent = "Google sign-in is not configured yet.";
+      return;
+    }
+    await waitForGoogleIdentity();
+    if (state.googleInitialized) return;
+    window.google.accounts.id.initialize({ client_id: state.googleClientId, callback: handleGoogleCredential });
+    window.google.accounts.id.renderButton($("googleSignInButton"), { theme: "outline", size: "large", shape: "rectangular", text: "continue_with", width: 320 });
+    state.googleInitialized = true;
+  } catch (error) {
+    status.textContent = error.message || "Google sign-in could not be loaded. Please try again.";
+  }
+}
+
+function waitForGoogleIdentity() {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const check = () => {
+      if (window.google?.accounts?.id) return resolve();
+      if (Date.now() - started > 8000) return reject(new Error("Google sign-in could not be loaded. Check your connection and try again."));
+      window.setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
+async function handleGoogleCredential(response) {
+  $("authError").textContent = "";
+  try {
+    const result = await api("/auth/google", { method: "POST", body: { credential: response.credential } });
+    await finishLogin(result);
+  } catch (error) {
+    $("authError").textContent = error.message;
+  }
+}
+
+async function finishLogin(login) {
+  state.token = login.data.token;
+  state.userId = String(login.data.user?.id || "");
+  localStorage.setItem("artifice-token", state.token);
+  $("authDialog").close();
+  await loadWorkspace();
+  if (state.openPostAfterAuth) {
+    state.openPostAfterAuth = false;
+    openPostComposer();
+  }
+  if (state.openLearningAfterAuth) {
+    state.openLearningAfterAuth = false;
+    openProfile();
+  }
 }
 
 function showMessage(message, isError = false) {
@@ -712,29 +763,21 @@ $("authAction").addEventListener("click", () => {
     updateAccount(); render();
   } else openAuth();
 });
-$("authToggle").addEventListener("click", () => setAuthMode(!state.signup));
+$("passwordLoginToggle").addEventListener("click", () => {
+  state.passwordLoginVisible = !state.passwordLoginVisible;
+  $("passwordLoginFields").hidden = !state.passwordLoginVisible;
+  $("passwordLoginToggle").textContent = state.passwordLoginVisible ? "Continue with Google instead" : "Use an existing password account";
+  $("authError").textContent = "";
+});
 $("closeAuth").addEventListener("click", () => $("authDialog").close());
 $("authForm").addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!state.passwordLoginVisible) return;
   $("authError").textContent = "";
   const payload = { email: $("authEmail").value, password: $("authPassword").value };
-  if (state.signup) payload.name = $("authName").value;
   try {
-    if (state.signup) await api("/auth/register", { method: "POST", body: payload });
-    const login = await api("/auth/login", { method: "POST", body: { email: payload.email, password: payload.password } });
-    state.token = login.data.token;
-    state.userId = String(login.data.user?.id || "");
-    localStorage.setItem("artifice-token", state.token);
-    $("authDialog").close();
-    await loadWorkspace();
-    if (state.openPostAfterAuth) {
-      state.openPostAfterAuth = false;
-      openPostComposer();
-    }
-    if (state.openLearningAfterAuth) {
-      state.openLearningAfterAuth = false;
-      openProfile();
-    }
+    const login = await api("/auth/login", { method: "POST", body: payload });
+    await finishLogin(login);
   } catch (error) { $("authError").textContent = error.message; }
 });
 $("hintPrev").addEventListener("click", () => { state.hints = Math.max(1, state.hints - 1); renderHints(state.sprints[state.current]); });
@@ -812,7 +855,6 @@ document.querySelectorAll(".nav-link").forEach((button) => button.addEventListen
   }
 }));
 
-setAuthMode(false);
 state.project = fallbackProject();
 state.projects = [state.project];
 setView("community");

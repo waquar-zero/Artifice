@@ -20,7 +20,20 @@ const userSchema = new mongoose.Schema(
 
         passwordHash: {
             type: String,
-            required: true
+            select: false
+        },
+
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true,
+            select: false
+        },
+
+        authProvider: {
+            type: String,
+            enum: ["password", "google"],
+            default: "password"
         }
     },
     {

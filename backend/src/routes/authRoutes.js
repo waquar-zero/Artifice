@@ -3,6 +3,8 @@ import express from "express";
 import {
     register,
     login,
+    googleLogin,
+    getAuthConfig,
     getMe
 } from "../controllers/authController.js";
 
@@ -12,6 +14,8 @@ const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
+router.get("/config", getAuthConfig);
+router.post("/google", googleLogin);
 router.get("/me", authMiddleware, getMe);
 
 export default router;

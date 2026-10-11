@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#79d47b" />
   <title>Artifice — Tech community &amp; project learning</title>
   <link rel="stylesheet" href="./styles.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <main class="window-frame">
@@ -154,13 +155,17 @@
     <form id="authForm">
       <button type="button" class="dialog-close" id="closeAuth" aria-label="Close">×</button>
       <div class="eyebrow">WELCOME TO ARTIFICE</div>
-      <h2 id="authTitle">Log in to keep building</h2>
-      <label id="nameLabel" hidden>Your name<input id="authName" autocomplete="name" /></label>
-      <label>Email<input id="authEmail" type="email" required autocomplete="email" /></label>
-      <label>Password<input id="authPassword" type="password" required minlength="6" autocomplete="current-password" /></label>
+      <h2 id="authTitle">Sign in or create an account</h2>
+      <p class="auth-intro">Use your Google account to keep your projects and learning progress together.</p>
+      <div id="googleSignInButton" class="google-signin-button"></div>
+      <p class="auth-status" id="googleStatus" role="status"></p>
+      <button type="button" class="auth-toggle" id="passwordLoginToggle">Use an existing password account</button>
+      <div id="passwordLoginFields" hidden>
+        <label>Email<input id="authEmail" type="email" autocomplete="email" /></label>
+        <label>Password<input id="authPassword" type="password" autocomplete="current-password" /></label>
+        <button class="run-button auth-submit" type="submit" id="authSubmit">Log in</button>
+      </div>
       <p class="auth-error" id="authError" role="alert"></p>
-      <button class="run-button auth-submit" type="submit" id="authSubmit">Log in</button>
-      <button type="button" class="auth-toggle" id="authToggle">Create an account</button>
     </form>
   </dialog>
   <dialog id="profileDialog" class="profile-dialog" aria-labelledby="profileTitle">
