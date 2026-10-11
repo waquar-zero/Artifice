@@ -23,3 +23,7 @@ button,input,textarea{font:inherit}button{color:inherit}.window-frame{max-width:
 .project-search{height:40px;margin:11px 1px 2px;padding:0 10px;display:flex;align-items:center;gap:8px;border:1.5px solid #aaa494;border-radius:9px;background:#fffdf3;color:#5c6057}.project-search>span{font-size:22px;line-height:1}.project-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font-size:12px}.project-search input::placeholder{color:#858478}.project-search:focus-within{border-color:var(--ink);box-shadow:0 0 0 2px #a5e99a}.project-search-empty{margin:0;padding:12px;color:#77766d;font-size:12px;line-height:1.45}.catalog-empty{grid-column:1/-1;margin:0;padding:18px;border:1px dashed #aaa494;border-radius:10px;color:#66685f;font-size:14px}
 @media(max-width:950px){.project-search{max-width:440px;margin:3px 0 5px}.project-search-empty{min-width:190px}.catalog-empty{font-size:13px}}
 @media(max-width:520px){.project-search{height:36px;max-width:none;margin:2px 0 5px}.project-search input{font-size:12px}.project-search-empty{min-width:160px;padding:9px;font-size:11px}}
+/* Locked catalog entries remain visible while clearly unavailable. */
+.project-choice:disabled{opacity:.62;cursor:not-allowed}
+.catalog-card.locked .catalog-card-art{background:linear-gradient(145deg,#e4e1d7,#c9c6bb)}
+.catalog-card-footer .run-button:disabled{opacity:.68;cursor:not-allowed}

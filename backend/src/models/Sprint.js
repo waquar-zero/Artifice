@@ -53,6 +53,11 @@ const sprintSchema = new mongoose.Schema(
             }
         ],
 
+        starterCode: {
+            type: String,
+            default: ""
+        },
+
         // Optional function-based challenge metadata
         functionName: {
             type: String,
@@ -61,6 +66,7 @@ const sprintSchema = new mongoose.Schema(
 
         tests: [
             {
+                name: { type: String, trim: true },
                 input: {
                     type: [mongoose.Schema.Types.Mixed]
                 },

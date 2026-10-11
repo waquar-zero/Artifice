@@ -12,7 +12,7 @@ Base URL: `http://localhost:5000/api`. JSON requests use `Content-Type: applicat
 | `POST /posts` | Yes | `{ title, topic?, body }` | `201 { success, data: Post }`; title 4–120 chars, body 10–5000 chars |
 | `PATCH /posts/:postId` | Yes, owner | `{ title, topic?, body }` | `200 { success, data: Post }`; updates the caller’s post |
 | `DELETE /posts/:postId` | Yes, owner | — | `200 { success, message }`; deletes the caller’s post |
-| `GET /projects` | No | — | `200 { success, count, data: Project[] }` |
+| `GET /projects` | No | — | `200 { success, count, data: Project[] }`; includes `availability` (`active` or `coming_soon`) |
 | `GET /projects/:id` | No | — | `200 { success, data: Project }` |
 | `GET /sprints/project/:projectId` | No | — | `200 { success, count, data: Sprint[] }`, ordered by `order` |
 | `GET /sprints/:id` | No | — | `200 { success, data: Sprint }` |
@@ -23,6 +23,8 @@ Base URL: `http://localhost:5000/api`. JSON requests use `Content-Type: applicat
 | `GET /health` | No | — | `200 { status, service }` |
 
 Validation failures generally return `400`, missing records `404`, authentication failures `401`, and access/progress failures `403`. Duplicate registration returns `409`. Submission test details are in `data.tests` and persisted on `submission.testResults`; history omits submitted source code. A passing final sprint returns `progress.currentSprint: null` and all completed sprint IDs.
+
+Projects marked `coming_soon` remain readable in the catalog but cannot be started or submitted to; those actions return `403`. Function sprints use `testSpec.type: "function"`, a `functionName`, and `tests` entries with `name`, `input` (argument array), and `expectedOutput`. They run each case through the configured language executor and return the same named test results used by the UI.
 
 `GET /profile` returns only records belonging to the authenticated user, including their own submitted source code. Community posts are public to read and require authentication to publish. `GET /progress/:projectId` is the start/resume operation. There is intentionally no client-facing completion endpoint; only a passing submission advances progress. Project and sprint reads are public. The current CORS middleware permits all origins for local integration; restrict it before deployment.
 

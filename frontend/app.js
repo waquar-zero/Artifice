@@ -35,7 +35,7 @@ async function api(path, options = {}) {
 }
 
 function fallbackProject() {
-  return { title: "Build an HTTP Server", description: "Learn networking by building from the ground up.", language: "javascript", difficulty: "intermediate", slug: "build-http-server", _id: "demo" };
+  return { title: "Build an HTTP Server", description: "Learn networking by building from the ground up.", language: "javascript", difficulty: "intermediate", slug: "build-http-server", availability: "coming_soon", _id: "demo" };
 }
 
 async function loadWorkspace() {
@@ -58,7 +58,7 @@ async function loadWorkspace() {
       state.userId = null;
     }
   } else state.userId = null;
-  state.project = state.projects.find((project) => project.slug === "build-http-server") || state.projects[0] || fallbackProject();
+  state.project = state.projects.find((project) => project.availability !== "coming_soon") || state.projects[0] || fallbackProject();
   renderProjectChoices();
   renderProjectCatalog();
   updateAccount();
@@ -68,6 +68,7 @@ async function loadWorkspace() {
 
 async function selectProject(projectId) {
   state.project = state.projects.find((project) => String(project._id) === String(projectId)) || fallbackProject();
+  if (state.project.availability === "coming_soon") return;
   state.view = "projects";
   state.sprints = DEMO_SPRINTS;
   state.current = 0;
@@ -121,8 +122,8 @@ function setView(view) {
 function renderProjectChoices() {
   const choices = matchingProjects();
   $("projectChoices").innerHTML = choices.length ? choices.map((project) => `
-    <button class="project-choice ${state.view === "projects" && String(project._id) === String(state.project?._id) ? "selected" : ""}" data-project="${escapeHtml(project._id)}">
-      <span class="project-list-icon">▤</span><span class="project-choice-copy"><b>${escapeHtml(project.title || "Untitled project")}</b><small>${escapeHtml(project.difficulty || "Project")}${project.language ? ` · ${escapeHtml(project.language)}` : ""}</small></span><span class="side-arrow">›</span>
+    <button class="project-choice ${state.view === "projects" && String(project._id) === String(state.project?._id) ? "selected" : ""} ${project.availability === "coming_soon" ? "locked" : ""}" data-project="${escapeHtml(project._id)}" ${project.availability === "coming_soon" ? "disabled" : ""}>
+      <span class="project-list-icon">${project.availability === "coming_soon" ? "🔒" : "▤"}</span><span class="project-choice-copy"><b>${escapeHtml(project.title || "Untitled project")}</b><small>${project.availability === "coming_soon" ? "On hold · Coming soon" : `${escapeHtml(project.difficulty || "Project")}${project.language ? ` · ${escapeHtml(project.language)}` : ""}`}</small></span>${project.availability === "coming_soon" ? "" : '<span class="side-arrow">›</span>'}
     </button>`).join("") : '<p class="project-search-empty">No projects match your search.</p>';
   $("projectChoices").querySelectorAll("[data-project]").forEach((button) => button.addEventListener("click", () => selectProject(button.dataset.project)));
 }
@@ -138,13 +139,13 @@ function matchingProjects() {
 function renderProjectCatalog() {
   const projects = matchingProjects();
   $("catalogGrid").innerHTML = projects.length ? projects.map((project) => `
-    <article class="catalog-card">
-      <div class="catalog-card-art" aria-hidden="true"><span>▤</span><i>✳</i></div>
+    <article class="catalog-card ${project.availability === "coming_soon" ? "locked" : ""}">
+      <div class="catalog-card-art" aria-hidden="true"><span>${project.availability === "coming_soon" ? "🔒" : "▤"}</span><i>✳</i></div>
       <div class="catalog-card-content">
-        <div class="catalog-card-meta"><span>${escapeHtml(project.difficulty || "Project")}</span><span>${escapeHtml(project.language || "Self-paced")}</span></div>
+        <div class="catalog-card-meta"><span>${project.availability === "coming_soon" ? "Coming soon" : escapeHtml(project.difficulty || "Project")}</span>${project.availability === "coming_soon" ? "" : `<span>${escapeHtml(project.language || "Self-paced")}</span>`}</div>
         <h2>${escapeHtml(project.title || "Untitled project")}</h2>
         <p>${escapeHtml(project.description || "A hands-on project to build your skills step by step.")}</p>
-        <div class="catalog-card-footer"><span>${project.estimatedHours ? `${escapeHtml(project.estimatedHours)} hour${Number(project.estimatedHours) === 1 ? "" : "s"}` : "Learn at your own pace"}</span><button class="run-button" data-open-project="${escapeHtml(project._id)}">Choose project <span>›</span></button></div>
+        <div class="catalog-card-footer"><span>${project.availability === "coming_soon" ? "Currently on hold" : project.estimatedHours ? `${escapeHtml(project.estimatedHours)} hour${Number(project.estimatedHours) === 1 ? "" : "s"}` : "Learn at your own pace"}</span><button class="run-button" data-open-project="${escapeHtml(project._id)}" ${project.availability === "coming_soon" ? "disabled" : ""}>${project.availability === "coming_soon" ? "Coming soon" : "Choose project"} ${project.availability === "coming_soon" ? "" : "<span>›</span>"}</button></div>
       </div>
     </article>`).join("") : '<p class="catalog-empty">No projects match your search. Try another title, language, or skill level.</p>';
   $("catalogGrid").querySelectorAll("[data-open-project]").forEach((button) => button.addEventListener("click", () => selectProject(button.dataset.openProject)));
@@ -338,13 +339,15 @@ function renderHints(sprint) {
 function renderTests(sprint) {
   const checks = state.latestResults?.results;
   const specChecks = sprint.testSpec?.checks || [];
+  const functionCases = sprint.tests || [];
   const demoTests = ["Parses GET method correctly", "Extracts request path correctly", "Identifies HTTP version"];
-  const labels = checks?.length ? checks.map((test) => niceCheckName(test.check)) : specChecks.length ? specChecks.map((test) => niceCheckName(test.type)) : demoTests;
-  const passing = checks?.filter((test) => test.passed).length ?? (state.preview ? 2 : 0);
+  const labels = checks?.length ? checks.map((test) => test.label || niceCheckName(test.check)) : functionCases.length ? functionCases.map((test, index) => test.name || `Example ${index + 1}`) : specChecks.length ? specChecks.map((test) => niceCheckName(test.type)) : demoTests;
+  const showDemoResults = state.project?._id === "demo" && state.project?.slug === "build-http-server";
+  const passing = checks?.filter((test) => test.passed).length ?? (showDemoResults && state.current === 1 ? 2 : 0);
   $("testsSummary").textContent = `${passing} / ${labels.length}`;
   $("testResults").innerHTML = labels.map((label, index) => {
     const result = checks?.[index];
-    const status = result ? (result.passed ? "pass" : "fail") : (state.preview && state.current === 1 && index < 2 ? "pass" : "pending");
+    const status = result ? (result.passed ? "pass" : "fail") : (showDemoResults && state.current === 1 && index < 2 ? "pass" : "pending");
     return `<div class="test-row"><span class="test-indicator ${status}">${status === "pass" ? "✓" : status === "fail" ? "×" : ""}</span><span>${escapeHtml(label)}</span>${result?.error ? `<button class="test-more" title="${escapeHtml(result.error)}">…</button>` : ""}</div>`;
   }).join("");
 }
@@ -355,6 +358,7 @@ function niceCheckName(type = "test") {
 }
 
 function starterFor(sprint) {
+  if (sprint.starterCode) return sprint.starterCode;
   if (state.current === 0) return `const net = require('net');\n\nconst server = net.createServer((socket) => {\n  socket.on('data', (data) => {\n    // TODO: respond to the client\n  });\n});\n\nserver.listen(3000);`;
   return STARTER_CODE;
 }
@@ -487,7 +491,8 @@ async function submitCode() {
       }
       showMessage(progress.currentSprint ? "Sprint passed! The next sprint is unlocked." : "Project complete — beautiful work!");
     } else {
-      showMessage("Some tests didn’t pass yet. Review the results and try again.", true);
+      const testError = response.data.tests?.error || response.data.tests?.results?.find((result) => !result.passed)?.error;
+      showMessage(testError ? `Execution details: ${testError}` : "Some tests didn’t pass yet. Review the results and try again.", true);
     }
     render();
   } catch (error) {

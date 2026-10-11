@@ -34,6 +34,13 @@ export const createSubmission = async (req, res) => {
             });
         }
 
+        if (project.availability === "coming_soon") {
+            return res.status(403).json({
+                success: false,
+                message: "This project is currently on hold"
+            });
+        }
+
         if (!project.execution) {
             return res.status(400).json({
                 success: false,
@@ -100,7 +107,10 @@ export const createSubmission = async (req, res) => {
             testResult = await runTests({
                 testSpec: sprint.testSpec,
                 code,
-                execution: project.execution
+                execution: project.execution,
+                language: project.language,
+                functionName: sprint.functionName,
+                tests: sprint.tests
             });
         } catch (error) {
             if (
@@ -116,10 +126,20 @@ export const createSubmission = async (req, res) => {
             console.error("Submission execution failed:", error.message);
             testResult = {
                 passed: false,
-                totalTests: sprint.testSpec?.checks?.length ?? 0,
+                totalTests: sprint.testSpec?.type === "function"
+                    ? sprint.tests?.length ?? 0
+                    : sprint.testSpec?.checks?.length ?? 0,
                 passedTests: 0,
-                results: [],
-                error: "Execution failed"
+                results: (sprint.testSpec?.type === "function"
+                    ? sprint.tests || []
+                    : sprint.testSpec?.checks || []).map((check, index) => ({
+                    passed: false,
+                    check: sprint.testSpec?.type === "function" ? "function_case" : check.type,
+                    label: check.name || `Example ${index + 1}`,
+                    status: "execution_error",
+                    error: error.message
+                })),
+                error: error.message
             };
         }
 

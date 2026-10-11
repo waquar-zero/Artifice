@@ -8,6 +8,7 @@ import connectDB from "./config/db.js";
 
 import Project from "./models/Project.js";
 import Sprint from "./models/Sprint.js";
+import additionalProjects from "./seeds/additionalProjects.js";
 
 console.log("SEED FILE STARTED");
 
@@ -24,6 +25,8 @@ const projectData = {
     language: "javascript",
 
     estimatedHours: 10,
+
+    availability: "coming_soon",
 
     execution: {
         type: "process",
@@ -348,6 +351,24 @@ const sprintData = [
     }
 ];
 
+const seedProject = async ({ project: projectFields, sprints: sprintFields }) => {
+    const project = await Project.findOneAndUpdate(
+        { slug: projectFields.slug },
+        projectFields,
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    for (const sprintFieldsItem of sprintFields) {
+        await Sprint.findOneAndUpdate(
+            { projectId: project._id, order: sprintFieldsItem.order },
+            { ...sprintFieldsItem, projectId: project._id },
+            { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
+    }
+
+    return { project, sprintCount: sprintFields.length };
+};
+
 const seedDatabase = async () => {
     try {
         console.log("seedDatabase() started");
@@ -361,35 +382,9 @@ const seedDatabase = async () => {
 
         console.log("connectDB() finished");
 
-        // Clear existing development data
-        console.log("Clearing existing data...");
-
-        await Sprint.deleteMany({});
-        await Project.deleteMany({});
-
-        console.log("Existing data cleared");
-
-        // Create project
-        console.log("Creating project...");
-
-        const project = await Project.create(projectData);
-
-        console.log(
-            `Project created: ${project.title}`
-        );
-
-        // Attach project ID to every sprint
-        const sprints = sprintData.map((sprint) => ({
-            ...sprint,
-            projectId: project._id
-        }));
-
-        // Create sprints
-        console.log("Creating sprints...");
-
-        await Sprint.insertMany(sprints);
-
-        console.log("Sprints created");
+        const seeded = [];
+        seeded.push(await seedProject({ project: projectData, sprints: sprintData }));
+        for (const project of additionalProjects) seeded.push(await seedProject(project));
 
         console.log("");
 
@@ -397,9 +392,10 @@ const seedDatabase = async () => {
         console.log("Database seeded successfully");
         console.log("==============================");
 
-        console.log(`Project: ${project.title}`);
-        console.log(`Project ID: ${project._id}`);
-        console.log(`Sprints: ${sprints.length}`);
+        console.log(`Projects updated: ${seeded.length}`);
+        for (const item of seeded) {
+            console.log(`Project: ${item.project.title} (${item.project.availability}) — ${item.sprintCount} sprints`);
+        }
 
         console.log("==============================");
 

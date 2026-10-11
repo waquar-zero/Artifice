@@ -1,12 +1,11 @@
+import { isDeepStrictEqual } from "node:util";
+
 export const checkResult = ({
     actual,
     expected
 }) => {
-    const normalizedActual = JSON.stringify(actual);
-    const normalizedExpected = JSON.stringify(expected);
-
     return {
-        passed: normalizedActual === normalizedExpected,
+        passed: isDeepStrictEqual(actual, expected),
         actual,
         expected
     };

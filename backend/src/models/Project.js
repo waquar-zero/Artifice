@@ -35,6 +35,11 @@ const projectSchema = new mongoose.Schema(
             type: Number,
             required: true
         },
+        availability: {
+            type: String,
+            enum: ["active", "coming_soon"],
+            default: "active"
+        },
         execution: {
             type: {
             type: String,

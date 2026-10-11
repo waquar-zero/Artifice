@@ -15,6 +15,13 @@ export const getProgress = async (req, res) => {
             });
         }
 
+        if (project.availability === "coming_soon") {
+            return res.status(403).json({
+                success: false,
+                message: "This project is currently on hold"
+            });
+        }
+
         let progress = await Progress.findOne({
             userId: req.userId,
             projectId

@@ -151,6 +151,8 @@ export const startProcess = async ({
 }) => {
     let workspace;
     let child;
+    const output = { stdout: "", stderr: "" };
+    const capture = (current, chunk) => `${current}${chunk.toString("utf8")}`.slice(-4000);
 
     try {
         if (
@@ -200,15 +202,11 @@ export const startProcess = async ({
         });
 
         child.stdout.on("data", (data) => {
-            console.log(
-                `[student stdout] ${data.toString()}`
-            );
+            output.stdout = capture(output.stdout, data);
         });
 
         child.stderr.on("data", (data) => {
-            console.error(
-                `[student stderr] ${data.toString()}`
-            );
+            output.stderr = capture(output.stderr, data);
         });
 
         // Catch process startup errors, such as a missing command.
@@ -228,6 +226,13 @@ export const startProcess = async ({
             port: execution.port
         };
     } catch (error) {
+        const diagnostics = [output.stderr.trim(), output.stdout.trim()]
+            .filter(Boolean)
+            .join("\n");
+        if (diagnostics) {
+            error.message = `${error.message}\n${diagnostics}`.slice(-8500);
+        }
+
         try {
             await stopProcess({
                 child,
